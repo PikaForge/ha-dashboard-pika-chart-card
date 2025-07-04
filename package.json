@@ -1,6 +1,6 @@
 {
   "name": "pika-chart-card",
-  "version": "0.0.1-alpha.3",
+  "version": "0.0.1",
   "description": "A flexible chart card for Home Assistant with swappable chart libraries",
   "main": "dist/pika-chart-card.js",
   "scripts": {
