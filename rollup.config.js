@@ -5,7 +5,7 @@ import terser from '@rollup/plugin-terser';
 export default {
   input: 'src/pika-chart-card.ts',
   output: {
-    file: 'dist/pika-chart-card.js',
+    file: 'dist/ha-dashboard-pika-chart-card.js',
     format: 'es',
     sourcemap: true
   },

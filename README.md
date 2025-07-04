@@ -22,13 +22,13 @@ A flexible chart card for Home Assistant with swappable chart libraries (Chart.j
 
 ### Manual Installation
 
-1. Download the `pika-chart-card.js` file from the latest release
-2. Copy it to `/config/www/pika-chart-card.js`
+1. Download the `ha-dashboard-pika-chart-card.js` file from the latest release
+2. Copy it to `/config/www/ha-dashboard-pika-chart-card.js`
 3. Add the resource to your Lovelace configuration:
 
 ```yaml
 resources:
-  - url: /local/pika-chart-card.js
+  - url: /local/ha-dashboard-pika-chart-card.js
     type: module
 ```
 

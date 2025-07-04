@@ -111,12 +111,12 @@ jobs:
 
       - name: Create release files
         run: |
-          # Copy the built JavaScript file
-          cp dist/pika-chart-card.js .
+          # Copy the built JavaScript file with the repo name for HACS
+          cp dist/ha-dashboard-pika-chart-card.js .
           
           # Create a release zip with all necessary files
           mkdir -p release
-          cp dist/pika-chart-card.js release/
+          cp dist/ha-dashboard-pika-chart-card.js release/
           cp README.md release/
           cp hacs.json release/
           
@@ -144,12 +144,12 @@ jobs:
             4. Clear your browser cache
             
             ### Manual Installation
-            1. Download `pika-chart-card.js` from this release
-            2. Copy it to `/config/www/pika-chart-card.js`
+            1. Download `ha-dashboard-pika-chart-card.js` from this release
+            2. Copy it to `/config/www/ha-dashboard-pika-chart-card.js`
             3. Add the resource to your Lovelace configuration:
                ```yaml
                resources:
-                 - url: /local/pika-chart-card.js
+                 - url: /local/ha-dashboard-pika-chart-card.js
                    type: module
                ```
             4. Clear your browser cache
@@ -174,8 +174,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./pika-chart-card.js
-          asset_name: pika-chart-card.js
+          asset_path: ./ha-dashboard-pika-chart-card.js
+          asset_name: ha-dashboard-pika-chart-card.js
           asset_content_type: application/javascript
 
       - name: Upload release bundle
