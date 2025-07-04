@@ -20,56 +20,61 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
       - name: Validate version format
         run: |
-          if ! [[ "${{ github.event.inputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
+          if ! [[ "${{ github.event.inputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
             echo "Error: Version must be in format X.Y.Z or X.Y.Z-suffix (e.g., 1.2.3 or 1.2.3-beta)"
             exit 1
           fi
 
-      - name: Get integration name
-        id: integration
+      - name: Check if package.json exists
         run: |
-          # Auto-detect integration name from directory structure
-          INTEGRATION_NAME=$(ls custom_components/ | head -n 1)
-          echo "name=$INTEGRATION_NAME" >> $GITHUB_OUTPUT
-          echo "Found integration: $INTEGRATION_NAME"
-
-      - name: Check if manifest exists
-        run: |
-          MANIFEST_PATH="custom_components/${{ steps.integration.outputs.name }}/manifest.json"
-          if [ ! -f "$MANIFEST_PATH" ]; then
-            echo "Error: manifest.json not found at $MANIFEST_PATH"
+          if [ ! -f "package.json" ]; then
+            echo "Error: package.json not found"
             exit 1
           fi
-          echo "Found manifest at: $MANIFEST_PATH"
+          echo "Found package.json"
 
-      - name: Update manifest.json
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Update version
         run: |
           VERSION="${{ github.event.inputs.version }}"
-          MANIFEST_PATH="custom_components/${{ steps.integration.outputs.name }}/manifest.json"
           
-          # Update version in manifest.json
-          sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" "$MANIFEST_PATH"
+          # Update version using npm version (doesn't create git tag with --no-git-tag-version)
+          npm version "$VERSION" --no-git-tag-version
           
           # Verify the update worked
-          if grep -q "\"version\": \"$VERSION\"" "$MANIFEST_PATH"; then
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          if [ "$CURRENT_VERSION" = "$VERSION" ]; then
             echo "✅ Successfully updated version to $VERSION"
           else
-            echo "❌ Failed to update version in manifest.json"
+            echo "❌ Failed to update version in package.json"
             exit 1
           fi
+
+      - name: Build to verify
+        run: |
+          echo "Building to ensure everything compiles with new version..."
+          npm run build
 
       - name: Show changes
         run: |
           echo "Changes made:"
-          git diff --no-index /dev/null custom_components/${{ steps.integration.outputs.name }}/manifest.json || true
+          git diff package.json package-lock.json
 
       - name: Commit changes
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add custom_components/${{ steps.integration.outputs.name }}/manifest.json
+          git add package.json package-lock.json
           
           # Check if there are changes to commit
           if git diff --staged --quiet; then
@@ -86,7 +91,7 @@ jobs:
       - name: Create and push tag
         run: |
           TAG="v${{ github.event.inputs.version }}"
-          git tag "$TAG"
+          git tag -a "$TAG" -m "Release version ${{ github.event.inputs.version }}"
           git push origin "$TAG"
           echo "✅ Created and pushed tag: $TAG"
 
@@ -94,7 +99,7 @@ jobs:
         run: |
           echo "## Version Bump Complete! 🚀" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Integration:** ${{ steps.integration.outputs.name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Project:** Pika Chart Card" >> $GITHUB_STEP_SUMMARY
           echo "- **New Version:** ${{ github.event.inputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Tag Created:** v${{ github.event.inputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
