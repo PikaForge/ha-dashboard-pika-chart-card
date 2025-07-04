@@ -1,5 +1,5 @@
 #!/bin/bash
-# Universal script to create a new release for any Home Assistant custom component
+# Release script for Pika Chart Card (Lovelace card)
 
 # Colors for output
 RED='\033[0;31m'
@@ -25,46 +25,6 @@ print_debug() {
     echo -e "${BLUE}$1${NC}"
 }
 
-# Function to detect integration name
-detect_integration() {
-    if [ ! -d "custom_components" ]; then
-        print_error "custom_components directory not found"
-        return 1
-    fi
-
-    local integrations=(custom_components/*)
-    if [ ${#integrations[@]} -eq 0 ]; then
-        print_error "No integrations found in custom_components/"
-        return 1
-    fi
-
-    if [ ${#integrations[@]} -gt 1 ]; then
-        print_info "Multiple integrations found:"
-        for integration in "${integrations[@]}"; do
-            local name=$(basename "$integration")
-            echo "  - $name"
-        done
-
-        read -p "Enter integration name to release: " -r INTEGRATION_NAME
-        if [ ! -d "custom_components/$INTEGRATION_NAME" ]; then
-            print_error "Integration '$INTEGRATION_NAME' not found"
-            return 1
-        fi
-    else
-        INTEGRATION_NAME=$(basename "${integrations[0]}")
-    fi
-
-    print_debug "Detected integration: $INTEGRATION_NAME"
-    return 0
-}
-
-# Function to get display name for integration
-get_display_name() {
-    local name="$1"
-    # Convert underscores to spaces and title case
-    echo "$name" | sed 's/_/ /g' | sed 's/\b\w/\U&/g'
-}
-
 # Check if version argument is provided
 if [ -z "$1" ]; then
     print_error "Version number required"
@@ -83,28 +43,42 @@ if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
     exit 1
 fi
 
-# Detect integration
-if ! detect_integration; then
+# Check if package.json exists
+if [ ! -f "package.json" ]; then
+    print_error "package.json not found"
+    print_info "Are you in the root directory of the project?"
     exit 1
 fi
 
-DISPLAY_NAME=$(get_display_name "$INTEGRATION_NAME")
-MANIFEST_PATH="custom_components/$INTEGRATION_NAME/manifest.json"
+# Get project info from package.json
+PROJECT_NAME=$(node -p "require('./package.json').name" 2>/dev/null)
+if [ -z "$PROJECT_NAME" ]; then
+    print_error "Could not read project name from package.json"
+    exit 1
+fi
+
+DISPLAY_NAME="Pika Chart Card"
 
 print_info "Project: $DISPLAY_NAME"
-print_info "Integration: $INTEGRATION_NAME"
+print_info "Package: $PROJECT_NAME"
 print_info "Version: $VERSION"
 echo
-
-# Check if manifest exists
-if [ ! -f "$MANIFEST_PATH" ]; then
-    print_error "Manifest not found at $MANIFEST_PATH"
-    exit 1
-fi
 
 # Check if git is available
 if ! command -v git &> /dev/null; then
     print_error "Git is not installed or not in PATH"
+    exit 1
+fi
+
+# Check if node is available
+if ! command -v node &> /dev/null; then
+    print_error "Node.js is not installed or not in PATH"
+    exit 1
+fi
+
+# Check if npm is available
+if ! command -v npm &> /dev/null; then
+    print_error "npm is not installed or not in PATH"
     exit 1
 fi
 
@@ -140,38 +114,40 @@ if git tag -l | grep -q "^v$VERSION$"; then
     exit 1
 fi
 
-# Update manifest.json
-print_info "Updating $MANIFEST_PATH to version $VERSION..."
+# Update package.json version
+print_info "Updating package.json to version $VERSION..."
 
 # Create backup
-cp "$MANIFEST_PATH" "$MANIFEST_PATH.bak"
+cp package.json package.json.bak
 
-# Update version using sed (works on both macOS and Linux)
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    # macOS
-    sed -i '' "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" "$MANIFEST_PATH"
-else
-    # Linux
-    sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" "$MANIFEST_PATH"
-fi
-
-# Verify the update worked
-if ! grep -q "\"version\": \"$VERSION\"" "$MANIFEST_PATH"; then
-    print_error "Failed to update version in manifest.json"
-    mv "$MANIFEST_PATH.bak" "$MANIFEST_PATH"
+# Update version using npm version (doesn't create git tag with --no-git-tag-version)
+if ! npm version "$VERSION" --no-git-tag-version > /dev/null 2>&1; then
+    print_error "Failed to update version in package.json"
+    mv package.json.bak package.json
     exit 1
 fi
 
 # Remove backup
-rm "$MANIFEST_PATH.bak"
+rm package.json.bak
 
 # Show the change
-print_info "Updated manifest.json:"
-grep '"version"' "$MANIFEST_PATH"
+print_info "Updated package.json:"
+grep '"version"' package.json | head -1
+
+# Run build to ensure everything compiles
+print_info "Running build to verify everything compiles..."
+if ! npm run build; then
+    print_error "Build failed! Please fix errors before releasing."
+    # Restore original package.json
+    git checkout package.json
+    exit 1
+fi
+
+print_success "✓ Build successful"
 
 # Commit the change
 print_info "Committing version bump..."
-git add "$MANIFEST_PATH"
+git add package.json package-lock.json
 git commit -m "Bump version to $VERSION"
 
 # Create tag
@@ -214,9 +190,13 @@ fi
 
 echo
 print_success "🚀 Version $VERSION has been released!"
-print_info "Integration: $DISPLAY_NAME"
+print_info "Project: $DISPLAY_NAME"
 print_info "Tag: v$VERSION"
 echo
-print_info "GitHub Actions will now create the release with zip files."
+print_info "GitHub Actions will now:"
+print_info "  1. Build the TypeScript code"
+print_info "  2. Validate with HACS"
+print_info "  3. Create a GitHub release with the built JS file"
+echo
 print_info "Check the Actions tab in your repository to monitor progress:"
 print_debug "  https://github.com/$(git config --get remote.origin.url | sed 's/.*github.com[:/]\([^/]*\/[^/]*\).*/\1/' | sed 's/\.git$//')/actions"
