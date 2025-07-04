@@ -1,0 +1,15 @@
+# Test configuration for the Pika Chart Card
+# Add this to your Home Assistant dashboard
+
+type: custom:pika-chart-card
+title: Test Chart
+entities:
+  - entity: sensor.temperature
+    name: Temperature
+    color: '#ff6384'
+hours_to_show: 24
+chart_type: line
+library: chartjs
+show_legend: true
+show_tooltip: true
+show_grid: true

@@ -68,26 +68,6 @@ export class PikaChartCard extends LitElement {
         color: var(--error-color);
         padding: 16px;
       }
-
-      .library-selector {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        z-index: 10;
-        background: var(--card-background-color);
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        padding: 4px;
-      }
-
-      .library-selector select {
-        background: var(--card-background-color);
-        color: var(--primary-text-color);
-        border: none;
-        padding: 4px 8px;
-        cursor: pointer;
-        font-size: 12px;
-      }
     `;
   }
 
@@ -134,12 +114,6 @@ export class PikaChartCard extends LitElement {
       <ha-card>
         ${this.config.title ? html`<div class="card-header">${this.config.title}</div>` : ''}
         <div class="card-content">
-          <div class="library-selector">
-            <select @change=${this.handleLibraryChange} .value=${this.config.library}>
-              <option value="chartjs">Chart.js</option>
-              <option value="d3">D3.js</option>
-            </select>
-          </div>
           <div class="chart-container" id="chart-container"></div>
         </div>
       </ha-card>
@@ -250,8 +224,9 @@ export class PikaChartCard extends LitElement {
         include_start_time_state: true,
         significant_changes_only: true,
         minimal_response: false
-      });
+      }) as Record<string, any[]>;
 
+      console.log(`History response for ${entityId}:`, history);
       return history[entityId] || [];
     } catch (error) {
       console.error(`Error fetching history for ${entityId}:`, error);
@@ -267,7 +242,7 @@ export class PikaChartCard extends LitElement {
         end_time: endTime.toISOString(),
         statistic_ids: [entityConfig.entity],
         period: entityConfig.statistics?.period || 'hour'
-      });
+      }) as Record<string, any[]>;
 
       const entityStats = statistics[entityConfig.entity];
       if (!entityStats || entityStats.length === 0) {
@@ -311,34 +286,31 @@ export class PikaChartCard extends LitElement {
   }
 
   private processHistoryData(history: any[], entityConfig: any): ChartDataPoint[] {
-    return history
+    console.log(`Processing history data for entity:`, entityConfig, `History length:`, history.length);
+    const processed = history
       .filter(state => state.state !== 'unknown' && state.state !== 'unavailable')
       .map(state => {
         const value = entityConfig.attribute 
           ? state.attributes[entityConfig.attribute]
           : parseFloat(state.state);
 
-        return {
+        const point = {
           x: new Date(state.last_changed),
           y: isNaN(value) ? 0 : value
         };
+        
+        if (history.indexOf(state) < 3) { // Log first few points for debugging
+          console.log(`State:`, state.state, `Parsed value:`, value, `Date:`, state.last_changed, `Point:`, point);
+        }
+        
+        return point;
       })
       .filter(point => !isNaN(point.y));
+    
+    console.log(`Processed ${processed.length} data points`);
+    return processed;
   }
 
-  private handleLibraryChange(event: Event): void {
-    const select = event.target as HTMLSelectElement;
-    const newLibrary = select.value as 'chartjs' | 'd3';
-    
-    if (newLibrary !== this.config.library) {
-      this.config = { ...this.config, library: newLibrary };
-      
-      if (this.chartManager) {
-        const newAdapterFactory = this.getAdapterFactory();
-        this.chartManager.switchAdapter(newAdapterFactory);
-      }
-    }
-  }
 
   private getTheme(): 'light' | 'dark' {
     if (this.config.theme === 'auto') {

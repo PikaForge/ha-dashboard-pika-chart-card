@@ -24,7 +24,7 @@ import {
   Filler
 } from 'chart.js';
 import 'chart.js/auto';
-import { ChartLibraryAdapter, ChartOptions, ChartSeries, ChartUpdateOptions, ChartAxis, ChartDataPoint } from '../types/chart-types';
+import { ChartLibraryAdapter, ChartOptions, ChartSeries, ChartUpdateOptions, ChartAxis, ChartDataPoint, ChartType } from '../types/chart-types';
 
 Chart.register(
   LinearScale,
@@ -51,6 +51,7 @@ export class ChartJSAdapter implements ChartLibraryAdapter {
   private chart: Chart | null = null;
   private container: HTMLElement | null = null;
   private canvas: HTMLCanvasElement | null = null;
+  private currentChartType: ChartType = 'line';
 
   create(container: HTMLElement, options: ChartOptions): void {
     this.container = container;
@@ -61,6 +62,7 @@ export class ChartJSAdapter implements ChartLibraryAdapter {
     container.appendChild(this.canvas);
 
     const chartType = this.mapChartType(options.type);
+    this.currentChartType = options.type;
     const datasets = this.createDatasets(options.series, options.type);
     
     const config: ChartConfiguration = {
@@ -77,14 +79,11 @@ export class ChartJSAdapter implements ChartLibraryAdapter {
   update(series: ChartSeries[], options?: ChartUpdateOptions): void {
     if (!this.chart) return;
 
-    const datasets = this.createDatasets(series, this.chart.config.type as any);
+    const datasets = this.createDatasets(series, this.currentChartType || 'line');
     this.chart.data.datasets = datasets;
     
-    if (series.length > 0 && series[0].data.length > 0) {
-      const labels = series[0].data.map(point => point.x);
-      this.chart.data.labels = labels;
-    }
-
+    // Don't set labels when using time scale - Chart.js will use the x values from the data
+    
     this.chart.update(options?.animate ? 'active' : 'none');
   }
 
@@ -216,11 +215,21 @@ export class ChartJSAdapter implements ChartLibraryAdapter {
       },
       scales: {
         x: {
+          type: 'time',
           display: true,
           grid: {
             display: options.showGrid !== false
           },
-          stacked: options.stacked
+          stacked: options.stacked,
+          time: {
+            tooltipFormat: 'MMM dd, HH:mm',
+            displayFormats: {
+              hour: 'HH:mm',
+              day: 'MMM dd',
+              week: 'MMM dd',
+              month: 'MMM yyyy'
+            }
+          }
         },
         y: {
           display: true,
