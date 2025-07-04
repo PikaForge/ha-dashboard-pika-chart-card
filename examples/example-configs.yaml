@@ -1,0 +1,203 @@
+# Basic Line Chart
+- type: custom:pika-chart-card
+  entities:
+    - entity: sensor.temperature
+
+# Multi-series Line Chart with Colors
+- type: custom:pika-chart-card
+  title: Temperature Sensors
+  chart_type: line
+  entities:
+    - entity: sensor.living_room_temperature
+      name: Living Room
+      color: '#ff6384'
+    - entity: sensor.bedroom_temperature
+      name: Bedroom
+      color: '#36a2eb'
+    - entity: sensor.outside_temperature
+      name: Outside
+      color: '#ffce56'
+
+# Area Chart with Stacking
+- type: custom:pika-chart-card
+  title: Energy Consumption
+  chart_type: area
+  stacked: true
+  entities:
+    - entity: sensor.washer_power
+      name: Washer
+      color: '#4bc0c0'
+    - entity: sensor.dryer_power
+      name: Dryer
+      color: '#9966ff'
+    - entity: sensor.dishwasher_power
+      name: Dishwasher
+      color: '#ff9f40'
+
+# Column Chart
+- type: custom:pika-chart-card
+  title: Daily Water Usage
+  chart_type: column
+  hours_to_show: 168  # 7 days
+  entities:
+    - entity: sensor.water_usage_daily
+      name: Water Usage
+      color: '#36a2eb'
+
+# Mixed Chart Types (Chart.js)
+- type: custom:pika-chart-card
+  title: Weather Station
+  library: chartjs
+  hours_to_show: 72
+  entities:
+    - entity: sensor.temperature
+      name: Temperature
+      type: line
+      color: '#ff6384'
+      unit: '°C'
+    - entity: sensor.humidity
+      name: Humidity
+      type: line
+      color: '#36a2eb'
+      unit: '%'
+      yaxis_id: 2
+    - entity: sensor.rainfall
+      name: Rainfall
+      type: column
+      color: '#4bc0c0'
+      unit: 'mm'
+
+# Mixed Chart Types (D3.js)
+- type: custom:pika-chart-card
+  title: Sales Dashboard
+  library: d3
+  hours_to_show: 168  # 7 days
+  entities:
+    - entity: sensor.daily_revenue
+      name: Revenue
+      type: column
+      color: '#10b981'
+    - entity: sensor.conversion_rate
+      name: Conversion Rate
+      type: line
+      color: '#f59e0b'
+      yaxis_id: 2
+    - entity: sensor.average_order_value
+      name: Avg Order Value
+      type: area
+      color: '#8b5cf6'
+
+# Pie Chart (D3.js)
+- type: custom:pika-chart-card
+  title: Energy Distribution
+  chart_type: pie
+  library: d3
+  hours_to_show: 1  # Current values
+  entities:
+    - entity: sensor.solar_power
+      name: Solar
+      color: '#ffce56'
+    - entity: sensor.grid_power
+      name: Grid
+      color: '#ff6384'
+    - entity: sensor.battery_power
+      name: Battery
+      color: '#36a2eb'
+
+# Using Entity Attributes
+- type: custom:pika-chart-card
+  title: Climate Control
+  entities:
+    - entity: climate.living_room
+      name: Target Temperature
+      attribute: temperature
+      color: '#ff6384'
+    - entity: climate.living_room
+      name: Current Temperature
+      attribute: current_temperature
+      color: '#36a2eb'
+
+# High Frequency Updates
+- type: custom:pika-chart-card
+  title: Network Traffic
+  refresh_interval: 10  # Update every 10 seconds
+  hours_to_show: 1
+  entities:
+    - entity: sensor.download_speed
+      name: Download
+      color: '#10b981'
+      unit: 'Mbps'
+    - entity: sensor.upload_speed
+      name: Upload
+      color: '#f59e0b'
+      unit: 'Mbps'
+
+# Dark Theme with No Animation
+- type: custom:pika-chart-card
+  title: Server Metrics
+  theme: dark
+  animate: false
+  show_grid: false
+  entities:
+    - entity: sensor.cpu_usage
+      name: CPU
+      color: '#ef4444'
+      unit: '%'
+    - entity: sensor.memory_usage
+      name: Memory
+      color: '#8b5cf6'
+      unit: '%'
+
+# Minimal Configuration
+- type: custom:pika-chart-card
+  show_legend: false
+  show_grid: false
+  height: 200
+  entities:
+    - entity: sensor.bitcoin_price
+      color: '#f7931a'
+
+# Using Long-term Statistics
+- type: custom:pika-chart-card
+  title: Energy Usage Statistics
+  hours_to_show: 720  # 30 days
+  entities:
+    - entity: sensor.total_energy_consumption
+      name: Daily Average
+      statistics:
+        stat_type: mean
+        period: day
+      color: '#10b981'
+    - entity: sensor.total_energy_consumption
+      name: Daily Maximum
+      statistics:
+        stat_type: max
+        period: day
+      color: '#ef4444'
+
+# Statistics with Different Periods
+- type: custom:pika-chart-card
+  title: Temperature Statistics
+  hours_to_show: 168  # 7 days
+  entities:
+    - entity: sensor.outside_temperature
+      name: Hourly Average
+      statistics:
+        stat_type: mean
+        period: hour
+      type: line
+      color: '#3b82f6'
+    - entity: sensor.outside_temperature
+      name: Daily Min/Max
+      statistics:
+        stat_type: min
+        period: day
+      type: area
+      color: '#60a5fa'
+    - entity: sensor.outside_temperature
+      name: Daily Max
+      statistics:
+        stat_type: max
+        period: day
+      type: area
+      color: '#ef4444'
