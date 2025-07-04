@@ -134,14 +134,22 @@ export class PikaChartCard extends LitElement {
   }
 
   private initializeChart(): void {
+    console.log('Initializing chart...');
     this.chartContainer = this.shadowRoot?.getElementById('chart-container') as HTMLDivElement;
-    if (!this.chartContainer) return;
+    if (!this.chartContainer) {
+      console.error('Chart container not found!');
+      return;
+    }
 
+    console.log('Chart container found, creating adapter...');
     const adapterFactory = this.getAdapterFactory();
     this.chartManager = new ChartManager(adapterFactory);
 
     const chartOptions = this.createChartOptions();
+    console.log('Chart options:', chartOptions);
+    
     this.chartManager.initialize(this.chartContainer, chartOptions);
+    console.log('Chart manager initialized');
     
     this.updateChart();
   }

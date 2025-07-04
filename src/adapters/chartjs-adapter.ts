@@ -24,6 +24,7 @@ import {
   Filler
 } from 'chart.js';
 import 'chart.js/auto';
+import 'chartjs-adapter-date-fns';
 import { ChartLibraryAdapter, ChartOptions, ChartSeries, ChartUpdateOptions, ChartAxis, ChartDataPoint, ChartType } from '../types/chart-types';
 
 Chart.register(
@@ -54,16 +55,19 @@ export class ChartJSAdapter implements ChartLibraryAdapter {
   private currentChartType: ChartType = 'line';
 
   create(container: HTMLElement, options: ChartOptions): void {
+    console.log('ChartJS adapter create called with options:', options);
     this.container = container;
     
     this.canvas = document.createElement('canvas');
     this.canvas.style.width = '100%';
     this.canvas.style.height = '100%';
     container.appendChild(this.canvas);
+    console.log('Canvas created and appended');
 
     const chartType = this.mapChartType(options.type);
     this.currentChartType = options.type;
     const datasets = this.createDatasets(options.series, options.type);
+    console.log('Datasets created:', datasets);
     
     const config: ChartConfiguration = {
       type: chartType,
@@ -72,19 +76,31 @@ export class ChartJSAdapter implements ChartLibraryAdapter {
       },
       options: this.createChartOptions(options)
     };
+    console.log('Chart config:', config);
 
-    this.chart = new Chart(this.canvas, config);
+    try {
+      this.chart = new Chart(this.canvas, config);
+      console.log('Chart.js chart created successfully');
+    } catch (error) {
+      console.error('Error creating Chart.js chart:', error);
+    }
   }
 
   update(series: ChartSeries[], options?: ChartUpdateOptions): void {
-    if (!this.chart) return;
+    console.log('ChartJS adapter update called with series:', series);
+    if (!this.chart) {
+      console.error('Chart not initialized');
+      return;
+    }
 
     const datasets = this.createDatasets(series, this.currentChartType || 'line');
+    console.log('Updated datasets:', datasets);
     this.chart.data.datasets = datasets;
     
     // Don't set labels when using time scale - Chart.js will use the x values from the data
     
     this.chart.update(options?.animate ? 'active' : 'none');
+    console.log('Chart updated');
   }
 
   destroy(): void {

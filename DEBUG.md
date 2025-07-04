@@ -10,6 +10,7 @@
 - ✅ Removed library dropdown selector
 - ✅ Added time scale configuration to Chart.js adapter
 - ✅ Added debug logging to understand data flow
+- ✅ Fixed "This method is not implemented: Check that a complete date adapter is provided" error by adding chartjs-adapter-date-fns
 
 ## Debug Steps
 
