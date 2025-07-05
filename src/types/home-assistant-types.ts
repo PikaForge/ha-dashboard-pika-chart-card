@@ -86,7 +86,7 @@ export interface EntityConfig {
   unit?: string;
   color?: string;
   type?: 'line' | 'area' | 'column' | 'bar';
-  yaxis_id?: number;
+  yaxis_id?: string;
   group_by?: {
     func: 'min' | 'max' | 'mean' | 'sum' | 'last' | 'first' | 'count';
     duration: string;
@@ -106,7 +106,7 @@ export interface EntityConfig {
 }
 
 export interface AxisConfig {
-  id?: number;
+  id?: string;
   show?: boolean;
   opposite?: boolean;
   min?: number | 'auto';

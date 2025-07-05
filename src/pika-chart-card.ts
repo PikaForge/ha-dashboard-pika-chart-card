@@ -1,6 +1,6 @@
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { HomeAssistant, PikaChartCardConfig, HassEntity, EntityConfig } from './types/home-assistant-types';
+import { HomeAssistant, PikaChartCardConfig, HassEntity, EntityConfig, AxisConfig } from './types/home-assistant-types';
 import { ChartManager } from './chart-manager';
 import { ChartJSAdapter } from './adapters/chartjs-adapter';
 import { D3Adapter } from './adapters/d3-adapter';
@@ -175,21 +175,50 @@ export class PikaChartCard extends LitElement {
     
     // Configure y-axis from config
     if (this.config.yaxis && this.config.yaxis.length > 0) {
-      const primaryYAxis = this.config.yaxis[0];
-      axes.y = {
-        show: primaryYAxis.show,
-        min: typeof primaryYAxis.min === 'number' ? primaryYAxis.min : undefined,
-        max: typeof primaryYAxis.max === 'number' ? primaryYAxis.max : undefined
-      };
+      // Map axis configurations by ID for easy lookup
+      const axisMap = new Map<string, AxisConfig>();
+      this.config.yaxis.forEach(axis => {
+        if (axis.id) {
+          axisMap.set(axis.id, axis);
+        }
+      });
       
-      // Handle secondary y-axis if present
-      if (this.config.yaxis.length > 1) {
-        const secondaryYAxis = this.config.yaxis[1];
-        axes.y2 = {
-          show: secondaryYAxis.show,
-          min: typeof secondaryYAxis.min === 'number' ? secondaryYAxis.min : undefined,
-          max: typeof secondaryYAxis.max === 'number' ? secondaryYAxis.max : undefined
+      // Determine which axes are actually used by entities
+      const usedAxisIds = new Set<string>();
+      this.config.entities.forEach(entity => {
+        if (entity.yaxis_id) {
+          usedAxisIds.add(entity.yaxis_id);
+        }
+      });
+      
+      // Assign axes based on usage
+      // First axis (primary y-axis)
+      const primaryAxisId = usedAxisIds.has('0') ? '0' : 
+                           (usedAxisIds.size > 0 ? Array.from(usedAxisIds)[0] : '0');
+      const primaryYAxis = axisMap.get(primaryAxisId) || this.config.yaxis[0];
+      
+      if (primaryYAxis) {
+        axes.y = {
+          show: primaryYAxis.show,
+          min: typeof primaryYAxis.min === 'number' ? primaryYAxis.min : undefined,
+          max: typeof primaryYAxis.max === 'number' ? primaryYAxis.max : undefined
         };
+      }
+      
+      // Second axis (secondary y-axis) if there are multiple axes used
+      if (usedAxisIds.size > 1) {
+        const secondaryAxisId = usedAxisIds.has('1') ? '1' : 
+                               Array.from(usedAxisIds).find(id => id !== primaryAxisId);
+        if (secondaryAxisId) {
+          const secondaryYAxis = axisMap.get(secondaryAxisId);
+          if (secondaryYAxis) {
+            axes.y2 = {
+              show: secondaryYAxis.show,
+              min: typeof secondaryYAxis.min === 'number' ? secondaryYAxis.min : undefined,
+              max: typeof secondaryYAxis.max === 'number' ? secondaryYAxis.max : undefined
+            };
+          }
+        }
       }
     }
     
@@ -219,9 +248,43 @@ export class PikaChartCard extends LitElement {
     }
   }
 
+  private createAxisIdMapping(): Map<string, string> {
+    const mapping = new Map<string, string>();
+    
+    // Get all unique axis IDs used by entities
+    const usedAxisIds = new Set<string>();
+    this.config.entities.forEach(entity => {
+      if (entity.yaxis_id) {
+        usedAxisIds.add(entity.yaxis_id);
+      }
+    });
+    
+    // Map the first used axis ID to 'y' and the second to 'y2'
+    const sortedIds = Array.from(usedAxisIds).sort();
+    if (sortedIds.length > 0) {
+      mapping.set(sortedIds[0], 'y');
+    }
+    if (sortedIds.length > 1) {
+      mapping.set(sortedIds[1], 'y2');
+    }
+    
+    // If more than 2 axes are used, log a warning
+    if (sortedIds.length > 2) {
+      console.warn('Chart.js only supports 2 y-axes. Additional axes will be mapped to primary axis.');
+      for (let i = 2; i < sortedIds.length; i++) {
+        mapping.set(sortedIds[i], 'y');
+      }
+    }
+    
+    return mapping;
+  }
+
   private async fetchEntityData(): Promise<ChartSeries[]> {
     const endTime = new Date();
     const startTime = new Date(endTime.getTime() - (this.config.hours_to_show || 24) * 60 * 60 * 1000);
+
+    // Create a mapping of custom axis IDs to Chart.js axis IDs
+    const axisIdMapping = this.createAxisIdMapping();
 
     const seriesPromises = this.config.entities.map(async (entityConfig) => {
       const entity = this.hass.states[entityConfig.entity];
@@ -239,6 +302,12 @@ export class PikaChartCard extends LitElement {
         data = this.processHistoryData(history, entityConfig);
       }
 
+      // Map custom axis ID to Chart.js axis ID
+      let yAxisId = 'y';
+      if (entityConfig.yaxis_id && axisIdMapping.has(entityConfig.yaxis_id)) {
+        yAxisId = axisIdMapping.get(entityConfig.yaxis_id)!;
+      }
+
       return {
         name: entityConfig.name || entity.attributes.friendly_name || entityConfig.entity,
         data: data,
@@ -246,7 +315,7 @@ export class PikaChartCard extends LitElement {
         type: entityConfig.type || this.config.chart_type,
         unit: entityConfig.unit || entity.attributes.unit_of_measurement,
         show: entityConfig.show?.in_chart !== false,
-        yAxisId: entityConfig.yaxis_id ? `y${entityConfig.yaxis_id}` : 'y'
+        yAxisId: yAxisId
       } as ChartSeries;
     });
 

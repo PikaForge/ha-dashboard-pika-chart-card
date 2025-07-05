@@ -23,11 +23,11 @@ entities:
   - entity: sensor.temperature
     name: Temperature
     color: '#ff6384'
-    yaxis_id: 0  # Primary y-axis
+    yaxis_id: "0"  # Primary y-axis
   - entity: sensor.humidity
     name: Humidity
     color: '#36a2eb'
-    yaxis_id: 1  # Secondary y-axis
+    yaxis_id: "1"  # Secondary y-axis
 hours_to_show: 24
 chart_type: line
 library: chartjs
@@ -36,12 +36,12 @@ show_tooltip: true
 show_grid: true
 # Y-axis configuration
 yaxis:
-  - id: 0
+  - id: "0"
     show: true
     min: 0
     max: 40
     decimals: 1
-  - id: 1
+  - id: "1"
     show: true
     opposite: true
     min: 0
@@ -51,3 +51,33 @@ yaxis:
 xaxis:
   show: true
   # min and max can be timestamps for time-based charts
+
+---
+
+# Example with custom axis IDs
+type: custom:pika-chart-card
+title: Custom Axis IDs
+entities:
+  - entity: sensor.power
+    name: Power
+    color: '#ff6384'
+    yaxis_id: "power"  # Custom axis ID
+  - entity: sensor.energy
+    name: Energy
+    color: '#36a2eb'
+    yaxis_id: "energy"  # Another custom axis ID
+hours_to_show: 24
+chart_type: line
+library: chartjs
+yaxis:
+  - id: "power"
+    show: true
+    min: 0
+    max: 5000
+    decimals: 0
+  - id: "energy"
+    show: true
+    opposite: true
+    min: 0
+    max: 100
+    decimals: 1
