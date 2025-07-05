@@ -29,6 +29,7 @@ export interface ChartOptions {
   showGrid?: boolean;
   animate?: boolean;
   theme?: 'light' | 'dark';
+  axes?: ChartAxis;
 }
 
 export interface AxisOptions {

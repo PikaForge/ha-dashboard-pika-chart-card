@@ -204,6 +204,61 @@ export class ChartJSAdapter implements ChartLibraryAdapter {
   }
 
   private createChartOptions(options: ChartOptions): ChartJSOptions {
+    const scales: any = {
+      x: {
+        type: 'time',
+        display: options.axes?.x?.show !== false,
+        grid: {
+          display: options.showGrid !== false
+        },
+        stacked: options.stacked,
+        time: {
+          tooltipFormat: 'MMM dd, HH:mm',
+          displayFormats: {
+            hour: 'HH:mm',
+            day: 'MMM dd',
+            week: 'MMM dd',
+            month: 'MMM yyyy'
+          }
+        }
+      },
+      y: {
+        display: options.axes?.y?.show !== false,
+        grid: {
+          display: options.showGrid !== false
+        },
+        stacked: options.stacked
+      }
+    };
+    
+    // Apply axis min/max if provided
+    if (options.axes?.x?.min !== undefined) {
+      scales.x.min = options.axes.x.min;
+    }
+    if (options.axes?.x?.max !== undefined) {
+      scales.x.max = options.axes.x.max;
+    }
+    if (options.axes?.y?.min !== undefined) {
+      scales.y.min = options.axes.y.min;
+    }
+    if (options.axes?.y?.max !== undefined) {
+      scales.y.max = options.axes.y.max;
+    }
+    
+    // Handle secondary y-axis if present
+    if (options.axes?.y2) {
+      scales.y2 = {
+        display: options.axes.y2.show !== false,
+        position: 'right',
+        grid: {
+          display: false,
+          drawOnChartArea: false
+        },
+        min: options.axes.y2.min,
+        max: options.axes.y2.max
+      };
+    }
+    
     return {
       responsive: true,
       maintainAspectRatio: false,
@@ -229,32 +284,7 @@ export class ChartJSAdapter implements ChartLibraryAdapter {
           text: options.title
         }
       },
-      scales: {
-        x: {
-          type: 'time',
-          display: true,
-          grid: {
-            display: options.showGrid !== false
-          },
-          stacked: options.stacked,
-          time: {
-            tooltipFormat: 'MMM dd, HH:mm',
-            displayFormats: {
-              hour: 'HH:mm',
-              day: 'MMM dd',
-              week: 'MMM dd',
-              month: 'MMM yyyy'
-            }
-          }
-        },
-        y: {
-          display: true,
-          grid: {
-            display: options.showGrid !== false
-          },
-          stacked: options.stacked
-        }
-      }
+      scales
     };
   }
 

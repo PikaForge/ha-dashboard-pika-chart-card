@@ -13,3 +13,41 @@ library: chartjs
 show_legend: true
 show_tooltip: true
 show_grid: true
+
+---
+
+# Example with axis configuration
+type: custom:pika-chart-card
+title: Chart with Axis Configuration
+entities:
+  - entity: sensor.temperature
+    name: Temperature
+    color: '#ff6384'
+    yaxis_id: 0  # Primary y-axis
+  - entity: sensor.humidity
+    name: Humidity
+    color: '#36a2eb'
+    yaxis_id: 1  # Secondary y-axis
+hours_to_show: 24
+chart_type: line
+library: chartjs
+show_legend: true
+show_tooltip: true
+show_grid: true
+# Y-axis configuration
+yaxis:
+  - id: 0
+    show: true
+    min: 0
+    max: 40
+    decimals: 1
+  - id: 1
+    show: true
+    opposite: true
+    min: 0
+    max: 100
+    decimals: 0
+# X-axis configuration  
+xaxis:
+  show: true
+  # min and max can be timestamps for time-based charts

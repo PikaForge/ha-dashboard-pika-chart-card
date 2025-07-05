@@ -4,7 +4,7 @@ import { HomeAssistant, PikaChartCardConfig, HassEntity, EntityConfig } from './
 import { ChartManager } from './chart-manager';
 import { ChartJSAdapter } from './adapters/chartjs-adapter';
 import { D3Adapter } from './adapters/d3-adapter';
-import { ChartSeries, ChartDataPoint, ChartOptions } from './types/chart-types';
+import { ChartSeries, ChartDataPoint, ChartOptions, ChartAxis } from './types/chart-types';
 
 @customElement('pika-chart-card')
 export class PikaChartCard extends LitElement {
@@ -162,6 +162,37 @@ export class PikaChartCard extends LitElement {
   }
 
   private createChartOptions(): ChartOptions {
+    const axes: ChartAxis = {};
+    
+    // Configure x-axis from config
+    if (this.config.xaxis) {
+      axes.x = {
+        show: this.config.xaxis.show,
+        min: typeof this.config.xaxis.min === 'number' ? this.config.xaxis.min : undefined,
+        max: typeof this.config.xaxis.max === 'number' ? this.config.xaxis.max : undefined
+      };
+    }
+    
+    // Configure y-axis from config
+    if (this.config.yaxis && this.config.yaxis.length > 0) {
+      const primaryYAxis = this.config.yaxis[0];
+      axes.y = {
+        show: primaryYAxis.show,
+        min: typeof primaryYAxis.min === 'number' ? primaryYAxis.min : undefined,
+        max: typeof primaryYAxis.max === 'number' ? primaryYAxis.max : undefined
+      };
+      
+      // Handle secondary y-axis if present
+      if (this.config.yaxis.length > 1) {
+        const secondaryYAxis = this.config.yaxis[1];
+        axes.y2 = {
+          show: secondaryYAxis.show,
+          min: typeof secondaryYAxis.min === 'number' ? secondaryYAxis.min : undefined,
+          max: typeof secondaryYAxis.max === 'number' ? secondaryYAxis.max : undefined
+        };
+      }
+    }
+    
     return {
       type: this.config.chart_type || 'line',
       series: [],
@@ -172,7 +203,8 @@ export class PikaChartCard extends LitElement {
       showTooltip: this.config.show_tooltip,
       showGrid: this.config.show_grid,
       animate: this.config.animate,
-      theme: this.getTheme()
+      theme: this.getTheme(),
+      axes: Object.keys(axes).length > 0 ? axes : undefined
     };
   }
 
